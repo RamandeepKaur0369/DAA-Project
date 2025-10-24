@@ -1,6 +1,5 @@
 # 🎵 Music Analysis Project
 <p>
-<br>
 📘 Overview
 <br>
     The Music Analysis Project is designed to analyze various aspects of music such as tempo, rhythm, genre, and mood using data-driven techniques.
