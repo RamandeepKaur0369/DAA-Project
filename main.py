@@ -18,7 +18,6 @@ import io
 def apply_custom_styles():
     st.markdown("""
         <style>
-<<<<<<< HEAD
         /* Background image for main app */
         .stApp {
             background-image: url('https://thumbs.dreamstime.com/b/vibrant-dynamic-image-featuring-shiny-gold-musical-notes-flowing-against-black-background-creating-luxurious-315022193.jpg');
@@ -30,35 +29,12 @@ def apply_custom_styles():
         
         /* Add overlay for better readability */
         .stApp::before {
-=======
-        /* Plain white background for main app */
-        .stApp {
-            background-color: #f8f9fa;
-        }
-        
-        /* Main content styling - clean and simple */
-        .main .block-container {
-            background: #ffffff;
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-        
-        /* Sidebar styling with background image */
-        [data-testid="stSidebar"] {
-            position: relative;
-            border-right: 2px solid rgba(255, 255, 255, 0.1);
-        }
-        
-        [data-testid="stSidebar"]::before {
->>>>>>> 22fe35a415d26cae98f37c436d6c47d251c36e4e
             content: "";
-            position: absolute;
+            position: fixed;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-<<<<<<< HEAD
             background: rgba(0, 0, 0, 0.7);
             z-index: -1;
         }
@@ -90,6 +66,7 @@ def apply_custom_styles():
             color: #ffffff !important;
             text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
         }
+        
         /* Sidebar styling with background image */
         [data-testid="stSidebar"] {
             position: relative;
@@ -122,27 +99,6 @@ def apply_custom_styles():
             z-index: 1;
         }
         
-=======
-            background-image: url('https://thumbs.dreamstime.com/b/elegant-blue-treble-clef-musical-notes-border-design-abstract-divider-music-366512138.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            z-index: 0;
-        }
-        
-        [data-testid="stSidebar"]::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(180deg, rgba(25, 25, 35, 0.88) 0%, rgba(45, 45, 65, 0.88) 100%);
-            backdrop-filter: blur(5px);
-            z-index: 1;
-        }
-        
->>>>>>> 22fe35a415d26cae98f37c436d6c47d251c36e4e
         [data-testid="stSidebar"] > div {
             position: relative;
             z-index: 2;
@@ -179,14 +135,7 @@ def apply_custom_styles():
             color: black !important;
         }
         
-        /* Title styling */
-        h1 {
-            color: #1e3a8a !important;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
-            font-weight: 800 !important;
-        }
-        
-        /* Button styling - Main buttons change color */
+        /* Button styling - Main buttons */
         .stButton > button {
             background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
             color: black !important;
@@ -241,14 +190,30 @@ def apply_custom_styles():
         
         /* File uploader */
         [data-testid="stFileUploader"] {
-            background: rgba(0, 0, 0, 0.6);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 10px;
             padding: 15px;
             border: 2px dashed #ffd700;
         }
         
-        [data-testid="stFileUploader"] label {
-            color: #ffffff !important;
+        [data-testid="stFileUploader"] label,
+        [data-testid="stFileUploader"] span,
+        [data-testid="stFileUploader"] p,
+        [data-testid="stFileUploader"] div,
+        [data-testid="stFileUploader"] small,
+        [data-testid="stFileUploader"] button {
+            color: #000000 !important;
+        }
+        
+        [data-testid="stFileUploader"] .uploadedFileName {
+            color: #000000 !important;
+        }
+        
+        /* File uploader drag and drop text */
+        [data-testid="stFileUploadDropzone"] label,
+        [data-testid="stFileUploadDropzone"] span,
+        [data-testid="stFileUploadDropzone"] small {
+            color: #000000 !important;
         }
         
         /* Download button special styling */
