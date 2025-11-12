@@ -18,6 +18,7 @@ import io
 def apply_custom_styles():
     st.markdown("""
         <style>
+<<<<<<< HEAD
         /* Background image for main app */
         .stApp {
             background-image: url('https://thumbs.dreamstime.com/b/vibrant-dynamic-image-featuring-shiny-gold-musical-notes-flowing-against-black-background-creating-luxurious-315022193.jpg');
@@ -29,12 +30,35 @@ def apply_custom_styles():
         
         /* Add overlay for better readability */
         .stApp::before {
+=======
+        /* Plain white background for main app */
+        .stApp {
+            background-color: #f8f9fa;
+        }
+        
+        /* Main content styling - clean and simple */
+        .main .block-container {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Sidebar styling with background image */
+        [data-testid="stSidebar"] {
+            position: relative;
+            border-right: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        [data-testid="stSidebar"]::before {
+>>>>>>> 22fe35a415d26cae98f37c436d6c47d251c36e4e
             content: "";
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
+<<<<<<< HEAD
             background: rgba(0, 0, 0, 0.7);
             z-index: -1;
         }
@@ -98,6 +122,27 @@ def apply_custom_styles():
             z-index: 1;
         }
         
+=======
+            background-image: url('https://thumbs.dreamstime.com/b/elegant-blue-treble-clef-musical-notes-border-design-abstract-divider-music-366512138.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+        }
+        
+        [data-testid="stSidebar"]::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(25, 25, 35, 0.88) 0%, rgba(45, 45, 65, 0.88) 100%);
+            backdrop-filter: blur(5px);
+            z-index: 1;
+        }
+        
+>>>>>>> 22fe35a415d26cae98f37c436d6c47d251c36e4e
         [data-testid="stSidebar"] > div {
             position: relative;
             z-index: 2;
