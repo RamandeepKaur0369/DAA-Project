@@ -18,41 +18,54 @@ import io
 def apply_custom_styles():
     st.markdown("""
         <style>
-        /* Background Image - 50% lighter and transparent */
+        /* Plain white background for main app */
         .stApp {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), 
-                              url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTejBK4ZykxTpG03wPiKjwapW0o6GEkaiKaeQ&s');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+            background-color: #f8f9fa;
         }
         
-        /* Overlay for better readability */
-        .stApp::before {
+        /* Main content styling - clean and simple */
+        .main .block-container {
+            background: #ffffff;
+            padding: 2rem;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Sidebar styling with background image */
+        [data-testid="stSidebar"] {
+            position: relative;
+            border-right: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        [data-testid="stSidebar"]::before {
             content: "";
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.3);
-            z-index: -1;
+            background-image: url('https://thumbs.dreamstime.com/b/elegant-blue-treble-clef-musical-notes-border-design-abstract-divider-music-366512138.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
         }
         
-        /* Main content styling */
-        .main .block-container {
-            background: rgba(255, 255, 255, 0.95);
-            padding: 2rem;
-            border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        [data-testid="stSidebar"]::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(25, 25, 35, 0.88) 0%, rgba(45, 45, 65, 0.88) 100%);
+            backdrop-filter: blur(5px);
+            z-index: 1;
         }
         
-        /* Sidebar styling */
-        [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, rgba(25, 25, 35, 0.95) 0%, rgba(45, 45, 65, 0.95) 100%);
-            backdrop-filter: blur(10px);
-            border-right: 2px solid rgba(255, 255, 255, 0.1);
+        [data-testid="stSidebar"] > div {
+            position: relative;
+            z-index: 2;
         }
         
         [data-testid="stSidebar"] * {
