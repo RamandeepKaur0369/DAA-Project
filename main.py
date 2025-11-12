@@ -20,7 +20,7 @@ def apply_custom_styles():
         <style>
         /* Background image for main app */
         .stApp {
-            background-image: url('https://thumbs.dreamstime.com/b/elegant-blue-treble-clef-musical-notes-border-design-abstract-divider-music-366512138.jpg');
+            background-image: url('https://thumbs.dreamstime.com/b/vibrant-dynamic-image-featuring-shiny-gold-musical-notes-flowing-against-black-background-creating-luxurious-315022193.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -35,22 +35,41 @@ def apply_custom_styles():
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.85);
+            background: rgba(0, 0, 0, 0.7);
             z-index: -1;
         }
         
         /* Main content styling - clean and simple */
         .main .block-container {
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(0, 0, 0, 0.8);
             padding: 2rem;
             border-radius: 15px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
         }
         
+        /* White text for all content */
+        .stApp, .stApp p, .stApp span, .stApp div, .stApp label, 
+        .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp h5, .stApp h6,
+        .stMarkdown, .stMarkdown p, .stMarkdown span, .stMarkdown div {
+            color: #ffffff !important;
+        }
+        
+        /* Title styling */
+        h1 {
+            color: #ffd700 !important;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            font-weight: 800 !important;
+        }
+        
+        /* Headers styling */
+        h2, h3, h4 {
+            color: #ffffff !important;
+            text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.8);
+        }
         /* Sidebar styling with background image */
         [data-testid="stSidebar"] {
             position: relative;
-            border-right: 2px solid rgba(255, 255, 255, 0.1);
+            border-right: 2px solid rgba(255, 215, 0, 0.3);
         }
         
         [data-testid="stSidebar"]::before {
@@ -60,7 +79,7 @@ def apply_custom_styles():
             left: 0;
             width: 100%;
             height: 100%;
-            background-image: url('https://thumbs.dreamstime.com/b/elegant-blue-treble-clef-musical-notes-border-design-abstract-divider-music-366512138.jpg');
+            background-image: url('https://thumbs.dreamstime.com/b/vibrant-dynamic-image-featuring-shiny-gold-musical-notes-flowing-against-black-background-creating-luxurious-315022193.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
@@ -74,7 +93,7 @@ def apply_custom_styles():
             left: 0;
             width: 100%;
             height: 100%;
-            background: linear-gradient(180deg, rgba(25, 25, 35, 0.88) 0%, rgba(45, 45, 65, 0.88) 100%);
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.85) 0%, rgba(20, 20, 20, 0.85) 100%);
             backdrop-filter: blur(5px);
             z-index: 1;
         }
@@ -90,28 +109,29 @@ def apply_custom_styles():
         
         /* Sidebar button styling */
         [data-testid="stSidebar"] button {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 0.8) 0%, rgba(168, 85, 247, 0.8) 100%);
-            color: white !important;
-            border: 2px solid rgba(255, 255, 255, 0.2);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 0.8) 0%, rgba(218, 165, 32, 0.8) 100%);
+            color: black !important;
+            border: 2px solid rgba(255, 215, 0, 0.4);
             border-radius: 12px;
             padding: 15px;
             margin: 10px 0;
             transition: all 0.3s ease;
             font-weight: 600;
-            box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.3);
         }
         
         [data-testid="stSidebar"] button:hover {
-            background: linear-gradient(135deg, rgba(99, 102, 241, 1) 0%, rgba(168, 85, 247, 1) 100%);
+            background: linear-gradient(135deg, rgba(255, 215, 0, 1) 0%, rgba(218, 165, 32, 1) 100%);
             transform: translateY(-3px);
-            box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.5);
         }
         
         /* Active sidebar button */
         [data-testid="stSidebar"] button[kind="primary"] {
-            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%) !important;
-            box-shadow: 0 6px 20px rgba(245, 87, 108, 0.5) !important;
+            background: linear-gradient(135deg, #ffd700 0%, #ffaa00 100%) !important;
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6) !important;
             transform: scale(1.05);
+            color: black !important;
         }
         
         /* Title styling */
@@ -123,19 +143,19 @@ def apply_custom_styles():
         
         /* Button styling - Main buttons change color */
         .stButton > button {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+            background: linear-gradient(135deg, #ffd700 0%, #daa520 100%);
+            color: black !important;
             border: none;
             border-radius: 10px;
             padding: 12px 24px;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
         }
         
         .stButton > button:hover {
-            background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
-            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            background: linear-gradient(135deg, #daa520 0%, #ffd700 100%);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
             transform: translateY(-2px);
         }
         
@@ -143,52 +163,102 @@ def apply_custom_styles():
         [data-testid="stMetricValue"] {
             font-size: 28px;
             font-weight: 700;
-            color: #1e3a8a;
+            color: #ffd700 !important;
+        }
+        
+        [data-testid="stMetricLabel"] {
+            color: #ffffff !important;
+        }
+        
+        [data-testid="stMetricDelta"] {
+            color: #ffd700 !important;
         }
         
         /* Enhanced visibility for images and plots */
         .stImage, [data-testid="stImage"] {
             border-radius: 10px;
-            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-            border: 3px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+            border: 3px solid rgba(255, 215, 0, 0.5);
         }
         
         /* Progress bar */
         .stProgress > div > div {
-            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(90deg, #ffd700 0%, #daa520 100%);
         }
         
         /* Info boxes */
         .stAlert {
             border-radius: 10px;
-            border-left: 5px solid #667eea;
-            background: rgba(102, 126, 234, 0.1);
+            border-left: 5px solid #ffd700;
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffffff !important;
         }
         
         /* File uploader */
         [data-testid="stFileUploader"] {
-            background: rgba(255, 255, 255, 0.8);
+            background: rgba(0, 0, 0, 0.6);
             border-radius: 10px;
             padding: 15px;
-            border: 2px dashed #667eea;
+            border: 2px dashed #ffd700;
+        }
+        
+        [data-testid="stFileUploader"] label {
+            color: #ffffff !important;
         }
         
         /* Download button special styling */
         .stDownloadButton > button {
-            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-            color: white;
+            background: linear-gradient(135deg, #ffd700 0%, #b8860b 100%);
+            color: black !important;
             border: none;
             border-radius: 10px;
             padding: 12px 24px;
             font-weight: 600;
             transition: all 0.3s ease;
-            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4);
+            box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);
         }
         
         .stDownloadButton > button:hover {
-            background: linear-gradient(135deg, #059669 0%, #047857 100%);
-            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.6);
+            background: linear-gradient(135deg, #b8860b 0%, #ffd700 100%);
+            box-shadow: 0 6px 20px rgba(255, 215, 0, 0.6);
             transform: translateY(-2px);
+        }
+        
+        /* Slider styling */
+        .stSlider label {
+            color: #ffffff !important;
+        }
+        
+        /* Radio button styling */
+        .stRadio label {
+            color: #ffffff !important;
+        }
+        
+        /* Checkbox styling */
+        .stCheckbox label {
+            color: #ffffff !important;
+        }
+        
+        /* Expander styling */
+        .streamlit-expanderHeader {
+            color: #ffffff !important;
+            background: rgba(0, 0, 0, 0.6);
+        }
+        
+        /* Table styling */
+        table {
+            color: #ffffff !important;
+            background: rgba(0, 0, 0, 0.6) !important;
+        }
+        
+        thead tr th {
+            color: #ffd700 !important;
+            background: rgba(0, 0, 0, 0.8) !important;
+        }
+        
+        tbody tr td {
+            color: #ffffff !important;
+            background: rgba(0, 0, 0, 0.6) !important;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -1169,11 +1239,11 @@ def main():
     
     st.markdown("---")
     st.markdown("""
-    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 10px;">
-        <p style="font-size: 16px; font-weight: 600; color: #1e3a8a; margin: 0;">
+    <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(218, 165, 32, 0.1) 100%); border-radius: 10px; border: 2px solid rgba(255, 215, 0, 0.3);">
+        <p style="font-size: 16px; font-weight: 600; color: #ffd700; margin: 0;">
             Built with ❤️ using Streamlit, Librosa, NumPy & SciPy
         </p>
-        <p style="font-size: 12px; color: #64748b; margin-top: 5px;">
+        <p style="font-size: 12px; color: #ffffff; margin-top: 5px;">
             🎵 Transform your music • 🔬 Analyze with precision • 🎨 Create masterpieces
         </p>
     </div>
