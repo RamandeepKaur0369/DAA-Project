@@ -18,17 +18,16 @@ import io
 def apply_custom_styles():
     st.markdown("""
         <style>
-        /* Background Image - 50% lighter and transparent */
+        /* Background image for main app */
         .stApp {
-            background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), 
-                              url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTejBK4ZykxTpG03wPiKjwapW0o6GEkaiKaeQ&s');
+            background-image: url('https://thumbs.dreamstime.com/b/elegant-blue-treble-clef-musical-notes-border-design-abstract-divider-music-366512138.jpg');
             background-size: cover;
             background-position: center;
             background-repeat: no-repeat;
             background-attachment: fixed;
         }
         
-        /* Overlay for better readability */
+        /* Add overlay for better readability */
         .stApp::before {
             content: "";
             position: fixed;
@@ -36,23 +35,53 @@ def apply_custom_styles():
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.85);
             z-index: -1;
         }
         
-        /* Main content styling */
+        /* Main content styling - clean and simple */
         .main .block-container {
             background: rgba(255, 255, 255, 0.95);
             padding: 2rem;
             border-radius: 15px;
-            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
         }
         
-        /* Sidebar styling */
+        /* Sidebar styling with background image */
         [data-testid="stSidebar"] {
-            background: linear-gradient(180deg, rgba(25, 25, 35, 0.95) 0%, rgba(45, 45, 65, 0.95) 100%);
-            backdrop-filter: blur(10px);
+            position: relative;
             border-right: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        [data-testid="stSidebar"]::before {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: url('https://thumbs.dreamstime.com/b/elegant-blue-treble-clef-musical-notes-border-design-abstract-divider-music-366512138.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            z-index: 0;
+        }
+        
+        [data-testid="stSidebar"]::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(180deg, rgba(25, 25, 35, 0.88) 0%, rgba(45, 45, 65, 0.88) 100%);
+            backdrop-filter: blur(5px);
+            z-index: 1;
+        }
+        
+        [data-testid="stSidebar"] > div {
+            position: relative;
+            z-index: 2;
         }
         
         [data-testid="stSidebar"] * {
