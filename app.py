@@ -1,6 +1,6 @@
 """
 Music Analysis & Order Statistics Finder with Song Remix/Mashup Feature
-Main Streamlit Application - Enhanced UI Version with Working Navigation
+Main Streamlit Application - DLL ERROR FIXED VERSION
 """
 import streamlit as st
 import numpy as np
@@ -8,8 +8,56 @@ import librosa
 import matplotlib.pyplot as plt
 import time
 from scipy import signal
-import soundfile as sf
+from scipy.io import wavfile
 import io
+import warnings
+warnings.filterwarnings('ignore')
+
+# ============================================================================
+# ROBUST AUDIO BACKEND DETECTION WITH FALLBACK
+# ============================================================================
+
+AUDIO_BACKEND = None
+BACKEND_ERROR = None
+
+def detect_audio_backend():
+    """Detect and test available audio backend"""
+    global AUDIO_BACKEND, BACKEND_ERROR
+    
+    # Try soundfile first (best quality but has DLL issues)
+    try:
+        import soundfile as sf
+        # Test if it actually works
+        test_array = np.zeros(100, dtype=np.float32)
+        test_buffer = io.BytesIO()
+        sf.write(test_buffer, test_array, 22050, format='WAV')
+        AUDIO_BACKEND = 'soundfile'
+        return 'soundfile', None
+    except Exception as e:
+        BACKEND_ERROR = f"soundfile failed: {str(e)[:100]}"
+        pass    
+    
+    # Try pydub (alternative)
+    try:
+        from pydub import AudioSegment
+        AUDIO_BACKEND = 'pydub'
+        return 'pydub', BACKEND_ERROR
+    except Exception as e:
+        BACKEND_ERROR = f"{BACKEND_ERROR} | pydub failed"
+        pass
+    
+    # Fallback to scipy (always available)
+    AUDIO_BACKEND = 'scipy'
+    return 'scipy', BACKEND_ERROR
+
+# Detect backend at startup
+AUDIO_BACKEND, BACKEND_ERROR = detect_audio_backend()
+
+# Import the working backend
+if AUDIO_BACKEND == 'soundfile':
+    import soundfile as sf
+elif AUDIO_BACKEND == 'pydub':
+    from pydub import AudioSegment
 
 # ============================================================================
 # CUSTOM CSS FOR STYLING
@@ -280,6 +328,30 @@ def apply_custom_styles():
 def create_feature_sidebar():
     st.sidebar.markdown("### 🎵 **Quick Navigation**")
     
+    # Show backend status
+    if AUDIO_BACKEND == 'soundfile':
+        status_color = "#10b981"
+        emoji = "✅"
+    elif AUDIO_BACKEND == 'scipy':
+        status_color = "#f59e0b"
+        emoji = "⚠️"
+    else:
+        status_color = "#3b82f6"
+        emoji = "ℹ️"
+    
+    st.sidebar.markdown(f"""
+    <div style="padding: 12px; background: rgba(0,0,0,0.5); border-radius: 8px; border-left: 4px solid {status_color}; margin-bottom: 15px;">
+        <p style="margin: 0; font-size: 13px; font-weight: 600;">
+            {emoji} Audio Backend: <span style="color: {status_color};">{AUDIO_BACKEND.upper()}</span>
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    if BACKEND_ERROR and AUDIO_BACKEND == 'scipy':
+        with st.sidebar.expander("⚠️ Backend Details"):
+            st.caption("Using scipy fallback (limited features)")
+            st.caption(f"Note: {BACKEND_ERROR[:80]}...")
+    
     # Initialize session state for tab selection
     if 'active_tab' not in st.session_state:
         st.session_state.active_tab = 0
@@ -319,6 +391,110 @@ def create_feature_sidebar():
             <p style="font-size: 12px; opacity: 0.8;">• Match tempos for better mashups</p>
         </div>
     """, unsafe_allow_html=True)
+
+# ============================================================================
+# AUDIO I/O FUNCTIONS WITH ROBUST FALLBACK
+# ============================================================================
+
+def write_audio_to_buffer(audio_data, sr, format='WAV'):
+    """Write audio to buffer with multi-backend support and robust error handling"""
+    
+    # Ensure audio is properly formatted
+    audio_data = np.asarray(audio_data, dtype=np.float64)
+    audio_data = np.nan_to_num(audio_data, nan=0.0, posinf=1.0, neginf=-1.0)
+    
+    # Normalize
+    max_val = np.abs(audio_data).max()
+    if max_val > 0:
+        audio_data = audio_data / max_val * 0.95
+    
+    buffer = io.BytesIO()
+    
+    # Try soundfile first
+    if AUDIO_BACKEND == 'soundfile':
+        try:
+            sf.write(buffer, audio_data, sr, format=format, subtype='PCM_16')
+            buffer.seek(0)
+            return buffer
+        except Exception as e:
+            st.warning(f"Soundfile write failed, using scipy fallback...")
+    
+    # Try pydub
+    if AUDIO_BACKEND == 'pydub':
+        try:
+            audio_int16 = np.int16(audio_data * 32767)
+            audio_segment = AudioSegment(
+                audio_int16.tobytes(),
+                frame_rate=sr,
+                sample_width=2,
+                channels=1
+            )
+            audio_segment.export(buffer, format='wav')
+            buffer.seek(0)
+            return buffer
+        except Exception as e:
+            st.warning(f"Pydub write failed, using scipy...")
+    
+    # Scipy fallback (always works)
+    try:
+        buffer = io.BytesIO()
+        audio_int16 = np.int16(audio_data * 32767)
+        wavfile.write(buffer, sr, audio_int16)
+        buffer.seek(0)
+        return buffer
+    except Exception as e:
+        st.error(f"❌ Critical error writing audio: {str(e)}")
+        raise
+
+
+def load_audio_file(uploaded_file, sr=None, duration=None):
+    """Load audio file with robust error handling"""
+    try:
+        uploaded_file.seek(0)
+        
+        # Try librosa (handles most formats)
+        try:
+            audio_data, sample_rate = librosa.load(
+                uploaded_file, 
+                sr=sr, 
+                duration=duration, 
+                mono=True,
+                res_type='kaiser_fast'
+            )
+        except Exception as e:
+            # Fallback: read as bytes first
+            uploaded_file.seek(0)
+            audio_bytes = uploaded_file.read()
+            uploaded_file.seek(0)
+            audio_data, sample_rate = librosa.load(
+                io.BytesIO(audio_bytes),
+                sr=sr,
+                duration=duration,
+                mono=True
+            )
+        
+        # Clean and normalize
+        audio_data = np.asarray(audio_data, dtype=np.float32)
+        audio_data = np.nan_to_num(audio_data, nan=0.0, posinf=1.0, neginf=-1.0)
+        
+        max_val = np.abs(audio_data).max()
+        if max_val > 1.0:
+            audio_data = audio_data / max_val
+        elif max_val < 0.01 and max_val > 0:
+            audio_data = audio_data / max_val * 0.5
+        
+        return audio_data, sample_rate
+        
+    except Exception as e:
+        st.error(f"❌ Error loading audio: {str(e)}")
+        st.info("""
+        💡 **Troubleshooting:**
+        - Convert file to WAV format
+        - Ensure file is not corrupted  
+        - Check file size (< 200MB recommended)
+        - Supported: WAV, MP3, OGG, FLAC
+        """)
+        raise
 
 # ============================================================================
 # ORDER STATISTICS ALGORITHMS
@@ -398,15 +574,22 @@ def calculate_median_statistics(audio_data, sr):
     rms = librosa.feature.rms(y=audio_data)[0]
     stats['median_energy'] = float(np.median(rms))
     
-    spectral_centroid = librosa.feature.spectral_centroid(y=audio_data, sr=sr)[0]
-    stats['median_brightness'] = float(np.median(spectral_centroid))
+    try:
+        spectral_centroid = librosa.feature.spectral_centroid(y=audio_data, sr=sr)[0]
+        stats['median_brightness'] = float(np.median(spectral_centroid))
+    except:
+        stats['median_brightness'] = 0.0
     
     zcr = librosa.feature.zero_crossing_rate(audio_data)[0]
     stats['median_zcr'] = float(np.median(zcr))
     
-    tempo, beats = librosa.beat.beat_track(y=audio_data, sr=sr)
-    stats['tempo'] = float(tempo) if np.isscalar(tempo) else float(tempo[0])
-    stats['beat_count'] = int(len(beats))
+    try:
+        tempo, beats = librosa.beat.beat_track(y=audio_data, sr=sr)
+        stats['tempo'] = float(tempo) if np.isscalar(tempo) else float(tempo[0]) if len(tempo) > 0 else 120.0
+        stats['beat_count'] = int(len(beats))
+    except:
+        stats['tempo'] = 120.0
+        stats['beat_count'] = 0
     
     return stats
 
@@ -418,37 +601,42 @@ def median_filter_denoise(audio_data, kernel_size=5):
 
 def adaptive_noise_reduction(audio_data, sr):
     """Advanced noise reduction using order statistics"""
-    noise_threshold = float(np.percentile(np.abs(audio_data), 25))
-    
-    D = librosa.stft(audio_data)
-    magnitude, phase = np.abs(D), np.angle(D)
-    median_mag = np.median(magnitude, axis=1, keepdims=True)
-    magnitude_clean = np.where(magnitude > median_mag * 1.5, magnitude, magnitude * 0.3)
-    
-    D_clean = magnitude_clean * np.exp(1j * phase)
-    audio_clean = librosa.istft(D_clean)
-    
-    return audio_clean
+    try:
+        noise_threshold = float(np.percentile(np.abs(audio_data), 25))
+        
+        D = librosa.stft(audio_data)
+        magnitude, phase = np.abs(D), np.angle(D)
+        median_mag = np.median(magnitude, axis=1, keepdims=True)
+        magnitude_clean = np.where(magnitude > median_mag * 1.5, magnitude, magnitude * 0.3)
+        
+        D_clean = magnitude_clean * np.exp(1j * phase)
+        audio_clean = librosa.istft(D_clean, length=len(audio_data))
+        
+        return audio_clean
+    except Exception as e:
+        st.warning(f"Adaptive filtering failed, using median filter...")
+        return median_filter_denoise(audio_data, 5)
 
 
 def analyze_audio_segments(audio_data, sr, segment_duration=1.0):
     """Analyze audio in segments using order statistics"""
     segment_length = int(segment_duration * sr)
-    num_segments = len(audio_data) // segment_length
+    num_segments = max(1, len(audio_data) // segment_length)
     
     segment_stats = []
     for i in range(num_segments):
         start = i * segment_length
-        end = start + segment_length
+        end = min(start + segment_length, len(audio_data))
         segment = audio_data[start:end]
         
-        stats = {
-            'segment': i,
-            'median_amp': float(np.median(np.abs(segment))),
-            'max_amp': float(np.max(np.abs(segment))),
-            'energy': float(np.sum(segment**2))
-        }
-        segment_stats.append(stats)
+        if len(segment) > 0:
+            stats = {
+                'segment': i,
+                'median_amp': float(np.median(np.abs(segment))),
+                'max_amp': float(np.max(np.abs(segment))),
+                'energy': float(np.sum(segment**2))
+            }
+            segment_stats.append(stats)
     
     return segment_stats
 
@@ -459,26 +647,43 @@ def analyze_audio_segments(audio_data, sr, segment_duration=1.0):
 
 def time_stretch(audio, rate):
     """Time stretch audio without changing pitch"""
-    return librosa.effects.time_stretch(audio, rate=rate)
+    try:
+        if rate <= 0 or rate > 4:
+            return audio
+        return librosa.effects.time_stretch(audio, rate=rate)
+    except Exception as e:
+        st.warning(f"Time stretch failed: {e}")
+        return audio
 
 
 def pitch_shift(audio, sr, n_steps):
     """Shift pitch without changing tempo"""
-    return librosa.effects.pitch_shift(audio, sr=sr, n_steps=n_steps)
+    try:
+        if abs(n_steps) > 24:
+            n_steps = np.clip(n_steps, -12, 12)
+        return librosa.effects.pitch_shift(audio, sr=sr, n_steps=n_steps)
+    except Exception as e:
+        st.warning(f"Pitch shift failed: {e}")
+        return audio
 
 
 def match_tempo(audio1, sr1, audio2, sr2):
     """Match tempo of audio2 to audio1"""
-    tempo1, _ = librosa.beat.beat_track(y=audio1, sr=sr1)
-    tempo2, _ = librosa.beat.beat_track(y=audio2, sr=sr2)
+    try:
+        tempo1, _ = librosa.beat.beat_track(y=audio1, sr=sr1)
+        tempo2, _ = librosa.beat.beat_track(y=audio2, sr=sr2)
+        
+        tempo1 = float(tempo1) if np.isscalar(tempo1) else float(tempo1[0]) if len(tempo1) > 0 else 120.0
+        tempo2 = float(tempo2) if np.isscalar(tempo2) else float(tempo2[0]) if len(tempo2) > 0 else 120.0
+        
+        if tempo2 > 10 and tempo1 > 10:
+            rate = tempo1 / tempo2
+            rate = np.clip(rate, 0.5, 2.0)
+            audio2_stretched = time_stretch(audio2, rate)
+            return audio2_stretched, rate
+    except Exception as e:
+        st.warning(f"Tempo matching failed: {e}")
     
-    tempo1 = float(tempo1) if np.isscalar(tempo1) else float(tempo1[0])
-    tempo2 = float(tempo2) if np.isscalar(tempo2) else float(tempo2[0])
-    
-    if tempo2 > 0:
-        rate = tempo1 / tempo2
-        audio2_stretched = time_stretch(audio2, rate)
-        return audio2_stretched, rate
     return audio2, 1.0
 
 
@@ -491,8 +696,8 @@ def mix_audio(audio1, audio2, mix_ratio=0.5):
     mixed = audio1 * mix_ratio + audio2 * (1 - mix_ratio)
     
     max_val = float(np.max(np.abs(mixed)))
-    if max_val > 1.0:
-        mixed = mixed / max_val
+    if max_val > 0.95:
+        mixed = mixed / max_val * 0.95
     
     return mixed
 
@@ -500,14 +705,15 @@ def mix_audio(audio1, audio2, mix_ratio=0.5):
 def crossfade_audio(audio1, audio2, crossfade_duration=2.0, sr=22050):
     """Crossfade between two audio tracks"""
     crossfade_samples = int(crossfade_duration * sr)
+    crossfade_samples = min(crossfade_samples, len(audio1), len(audio2))
     
-    if len(audio2) < crossfade_samples:
-        crossfade_samples = len(audio2)
+    if crossfade_samples < 100:
+        return np.concatenate([audio1, audio2])
     
     fade_out = np.linspace(1, 0, crossfade_samples)
     fade_in = np.linspace(0, 1, crossfade_samples)
     
-    audio1_end = audio1[:-crossfade_samples]
+    audio1_end = audio1[:-crossfade_samples] if len(audio1) > crossfade_samples else audio1
     audio1_fade = audio1[-crossfade_samples:] * fade_out
     audio2_fade = audio2[:crossfade_samples] * fade_in
     audio2_rest = audio2[crossfade_samples:]
@@ -642,7 +848,7 @@ def show_audio_analysis():
     if uploaded_file is not None:
         try:
             with st.spinner("🎵 Loading audio file..."):
-                audio_data, sr = librosa.load(uploaded_file, sr=None)
+                audio_data, sr = load_audio_file(uploaded_file, sr=None)
             duration = len(audio_data) / sr
             
             st.success(f"✅ Loaded audio: {duration:.2f}s @ {sr}Hz")
@@ -720,7 +926,7 @@ def show_audio_analysis():
                 plt.close()
             
         except Exception as e:
-            st.error(f"❌ Error loading audio: {str(e)}")
+            st.error(f"❌ Error: {str(e)}")
 
 
 def show_noise_reduction():
@@ -732,7 +938,7 @@ def show_noise_reduction():
     if uploaded_file_nr is not None:
         try:
             with st.spinner("🎵 Loading audio..."):
-                audio_data, sr = librosa.load(uploaded_file_nr, sr=None)
+                audio_data, sr = load_audio_file(uploaded_file_nr, sr=None)
             
             st.success(f"✅ Audio loaded: {len(audio_data)/sr:.2f}s @ {sr}Hz")
             
@@ -766,7 +972,6 @@ def show_noise_reduction():
                 
                 times = np.arange(len(audio_data)) / sr
                 
-                # Original
                 ax1.plot(times, audio_data, linewidth=0.5, alpha=0.8, color='#ef4444')
                 ax1.fill_between(times, audio_data, alpha=0.3, color='#ef4444')
                 ax1.set_title('🔴 Original (Noisy)', fontsize=13, fontweight='bold', pad=10)
@@ -774,7 +979,6 @@ def show_noise_reduction():
                 ax1.grid(alpha=0.3, linestyle='--')
                 ax1.set_facecolor('#fef2f2')
                 
-                # Cleaned
                 times_clean = np.arange(len(audio_clean)) / sr
                 ax2.plot(times_clean, audio_clean, linewidth=0.5, alpha=0.8, color='#22c55e')
                 ax2.fill_between(times_clean, audio_clean, alpha=0.3, color='#22c55e')
@@ -783,7 +987,6 @@ def show_noise_reduction():
                 ax2.grid(alpha=0.3, linestyle='--')
                 ax2.set_facecolor('#f0fdf4')
                 
-                # Noise
                 if len(audio_clean) == len(audio_data):
                     noise = audio_data - audio_clean
                     ax3.plot(times, noise, linewidth=0.5, alpha=0.8, color='#f97316')
@@ -813,7 +1016,6 @@ def show_noise_reduction():
                     st.metric("Max Amplitude", f"{float(np.max(np.abs(audio_clean))):.4f}")
                     st.metric("Std Deviation", f"{float(np.std(audio_clean)):.4f}")
                 
-                # Audio Player and Download Section
                 st.markdown("---")
                 st.markdown("### 🎧 Listen & Download Cleaned Audio")
                 
@@ -821,27 +1023,20 @@ def show_noise_reduction():
                 
                 with col1:
                     st.markdown("#### 🔴 Original Audio")
-                    buffer_original = io.BytesIO()
-                    sf.write(buffer_original, audio_data, sr, format='WAV')
-                    buffer_original.seek(0)
+                    buffer_original = write_audio_to_buffer(audio_data, sr)
                     st.audio(buffer_original, format='audio/wav')
                 
                 with col2:
                     st.markdown("#### 🟢 Cleaned Audio")
-                    buffer_clean = io.BytesIO()
-                    sf.write(buffer_clean, audio_clean, sr, format='WAV')
-                    buffer_clean.seek(0)
+                    buffer_clean = write_audio_to_buffer(audio_clean, sr)
                     st.audio(buffer_clean, format='audio/wav')
                 
                 st.markdown("---")
                 
-                # Download buttons
                 col1, col2 = st.columns(2)
                 
                 with col1:
-                    buffer_download = io.BytesIO()
-                    sf.write(buffer_download, audio_clean, sr, format='WAV')
-                    buffer_download.seek(0)
+                    buffer_download = write_audio_to_buffer(audio_clean, sr)
                     
                     st.download_button(
                         label="⬇️ Download Cleaned Audio (WAV)",
@@ -852,9 +1047,7 @@ def show_noise_reduction():
                     )
                 
                 with col2:
-                    buffer_download_mp3 = io.BytesIO()
-                    sf.write(buffer_download_mp3, audio_clean, sr, format='WAV')
-                    buffer_download_mp3.seek(0)
+                    buffer_download_mp3 = write_audio_to_buffer(audio_clean, sr)
                     
                     st.download_button(
                         label="⬇️ Download Cleaned Audio (Backup)",
@@ -885,23 +1078,25 @@ def show_song_remix():
     if song1_file is not None and song2_file is not None:
         try:
             with st.spinner("🎵 Loading songs..."):
-                audio1, sr1 = librosa.load(song1_file, sr=None, duration=60)
-                audio2, sr2 = librosa.load(song2_file, sr=None, duration=60)
+                audio1, sr1 = load_audio_file(song1_file, sr=None, duration=60)
+                audio2, sr2 = load_audio_file(song2_file, sr=None, duration=60)
             
             st.success(f"✅ Song 1: {len(audio1)/sr1:.1f}s @ {sr1}Hz | Song 2: {len(audio2)/sr2:.1f}s @ {sr2}Hz")
             
-            # Display tempo info
-            tempo1, _ = librosa.beat.beat_track(y=audio1, sr=sr1)
-            tempo2, _ = librosa.beat.beat_track(y=audio2, sr=sr2)
-            
-            tempo1 = float(tempo1) if np.isscalar(tempo1) else float(tempo1[0])
-            tempo2 = float(tempo2) if np.isscalar(tempo2) else float(tempo2[0])
-            
-            col1, col2 = st.columns(2)
-            with col1:
-                st.info(f"🎵 Song 1 Tempo: {tempo1:.1f} BPM")
-            with col2:
-                st.info(f"🎵 Song 2 Tempo: {tempo2:.1f} BPM")
+            try:
+                tempo1, _ = librosa.beat.beat_track(y=audio1, sr=sr1)
+                tempo2, _ = librosa.beat.beat_track(y=audio2, sr=sr2)
+                
+                tempo1 = float(tempo1) if np.isscalar(tempo1) else float(tempo1[0]) if len(tempo1) > 0 else 120.0
+                tempo2 = float(tempo2) if np.isscalar(tempo2) else float(tempo2[0]) if len(tempo2) > 0 else 120.0
+                
+                col1, col2 = st.columns(2)
+                with col1:
+                    st.info(f"🎵 Song 1 Tempo: {tempo1:.1f} BPM")
+                with col2:
+                    st.info(f"🎵 Song 2 Tempo: {tempo2:.1f} BPM")
+            except:
+                st.info("🎵 Tempo detection unavailable")
             
             st.markdown("---")
             st.markdown("### 🎛️ Remix Controls")
@@ -922,6 +1117,7 @@ def show_song_remix():
                                         help="0% = Only Song 2, 100% = Only Song 1") / 100
                 else:
                     crossfade_duration = st.slider("Crossfade Duration (s)", 1.0, 10.0, 2.0, 0.5)
+                    mix_ratio = 0.5
                 
                 pitch_shift_steps = st.slider("🎹 Pitch Shift (Song 2)", -12, 12, 0, 1,
                                              help="Semitones: -12 = octave down, +12 = octave up")
@@ -937,7 +1133,6 @@ def show_song_remix():
             
             if st.button("🎵 Create Mashup", type="primary", use_container_width=True):
                 with st.spinner("🎨 Creating your mashup..."):
-                    # Create mashup
                     if mix_mode == "Blend (Mix)":
                         mashup, sr_out = create_mashup(
                             audio1, audio2, sr1, sr2,
@@ -957,14 +1152,12 @@ def show_song_remix():
 
                     st.success("🎉 Mashup created successfully!")
 
-                    # Visualizations
                     st.markdown("### 🎨 Mashup Visualization")
 
                     fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(14, 12))
                     fig.patch.set_facecolor('white')
                     fig.patch.set_alpha(0.95)
 
-                    # Song 1
                     times1 = np.arange(len(audio1)) / sr1
                     ax1.plot(times1, audio1, linewidth=0.6, alpha=0.8, color='#3b82f6')
                     ax1.fill_between(times1, audio1, alpha=0.3, color='#3b82f6')
@@ -972,9 +1165,7 @@ def show_song_remix():
                     ax1.set_ylabel('Amplitude', fontsize=11, fontweight='bold')
                     ax1.grid(alpha=0.3, linestyle='--')
                     ax1.set_facecolor('#eff6ff')
-                    ax1.set_xlim(0, max(times1))
 
-                    # Song 2
                     times2 = np.arange(len(audio2)) / sr2
                     ax2.plot(times2, audio2, linewidth=0.6, alpha=0.8, color='#10b981')
                     ax2.fill_between(times2, audio2, alpha=0.3, color='#10b981')
@@ -982,9 +1173,7 @@ def show_song_remix():
                     ax2.set_ylabel('Amplitude', fontsize=11, fontweight='bold')
                     ax2.grid(alpha=0.3, linestyle='--')
                     ax2.set_facecolor('#ecfdf5')
-                    ax2.set_xlim(0, max(times2))
 
-                    # Mashup
                     times_mashup = np.arange(len(mashup)) / sr_out
                     ax3.plot(times_mashup, mashup, linewidth=0.6, alpha=0.8, color='#ec4899')
                     ax3.fill_between(times_mashup, mashup, alpha=0.3, color='#ec4899')
@@ -993,13 +1182,11 @@ def show_song_remix():
                     ax3.set_ylabel('Amplitude', fontsize=11, fontweight='bold')
                     ax3.grid(alpha=0.3, linestyle='--')
                     ax3.set_facecolor('#fdf2f8')
-                    ax3.set_xlim(0, max(times_mashup))
 
                     plt.tight_layout()
                     st.pyplot(fig)
                     plt.close()
 
-                    # Statistics
                     st.markdown("### 📈 Mashup Statistics")
                     col1, col2, col3 = st.columns(3)
 
@@ -1012,16 +1199,16 @@ def show_song_remix():
                         st.metric("📈 Max Amplitude", f"{float(np.max(np.abs(mashup))):.4f}")
 
                     with col3:
-                        mashup_tempo, _ = librosa.beat.beat_track(y=mashup, sr=sr_out)
-                        mashup_tempo = float(mashup_tempo) if np.isscalar(mashup_tempo) else float(mashup_tempo[0])
-                        st.metric("🎵 Estimated Tempo", f"{mashup_tempo:.1f} BPM")
+                        try:
+                            mashup_tempo, _ = librosa.beat.beat_track(y=mashup, sr=sr_out)
+                            mashup_tempo = float(mashup_tempo) if np.isscalar(mashup_tempo) else float(mashup_tempo[0]) if len(mashup_tempo) > 0 else 120.0
+                            st.metric("🎵 Estimated Tempo", f"{mashup_tempo:.1f} BPM")
+                        except:
+                            st.metric("🎵 Estimated Tempo", "N/A")
                         st.metric("📉 Peak-to-Peak", f"{float(np.ptp(mashup)):.4f}")
 
-                    # Download and playback
                     st.markdown("### 💾 Download & Listen")
-                    buffer = io.BytesIO()
-                    sf.write(buffer, mashup, sr_out, format='WAV')
-                    buffer.seek(0)
+                    buffer = write_audio_to_buffer(mashup, sr_out)
 
                     col1, col2 = st.columns(2)
                     
@@ -1039,8 +1226,8 @@ def show_song_remix():
                         st.audio(buffer, format='audio/wav')
             
         except Exception as e:
-            st.error(f"❌ Error creating mashup: {str(e)}")
-            st.info("💡 Tip: Use smaller files (under 60s) for faster processing")
+            st.error(f"❌ Error: {str(e)}")
+            st.info("💡 Tip: Use WAV files under 60s for best results")
     
     else:
         st.info("👆 Upload two audio files to create a mashup!")
@@ -1099,7 +1286,6 @@ def show_order_statistics():
         fig.patch.set_facecolor('white')
         fig.patch.set_alpha(0.95)
         
-        # Histogram
         n, bins, patches = ax1.hist(data, bins=30, alpha=0.7, color='#667eea', edgecolor='black', linewidth=1.2)
         
         for i, patch in enumerate(patches):
@@ -1123,7 +1309,6 @@ def show_order_statistics():
         ax1.grid(alpha=0.3, linestyle='--')
         ax1.set_facecolor('#f8f9fa')
         
-        # Box plot
         bp = ax2.boxplot(data, vert=True, patch_artist=True,
                         boxprops=dict(facecolor='#667eea', alpha=0.7, linewidth=2),
                         medianprops=dict(color='#ef4444', linewidth=3),
@@ -1199,6 +1384,13 @@ def main():
     st.title("🎵 Music Analysis & Order Statistics with Remix/Mashup")
     st.markdown("**Analyze audio, compare algorithms, reduce noise, and create amazing remixes!**")
     
+    # Show warning if using fallback backend
+    if AUDIO_BACKEND == 'scipy':
+        st.warning("""
+        ⚠️ **Running in Fallback Mode (scipy)** - Audio I/O uses basic backend. 
+        For best experience: `pip install soundfile`
+        """)
+    
     # Get active tab from session state
     active_tab = st.session_state.get('active_tab', 0)
     
@@ -1248,13 +1440,16 @@ def main():
         """)
     
     st.markdown("---")
-    st.markdown("""
+    st.markdown(f"""
     <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, rgba(255, 215, 0, 0.1) 0%, rgba(218, 165, 32, 0.1) 100%); border-radius: 10px; border: 2px solid rgba(255, 215, 0, 0.3);">
         <p style="font-size: 16px; font-weight: 600; color: #ffd700; margin: 0;">
             Built with ❤️ using Streamlit, Librosa, NumPy & SciPy
         </p>
         <p style="font-size: 12px; color: #ffffff; margin-top: 5px;">
             🎵 Transform your music • 🔬 Analyze with precision • 🎨 Create masterpieces
+        </p>
+        <p style="font-size: 11px; color: #ffd700; margin-top: 10px; opacity: 0.8;">
+            Audio Backend: <b>{AUDIO_BACKEND.upper()}</b> | Status: <b>{"✓ OPTIMAL" if AUDIO_BACKEND == 'soundfile' else "⚠ FALLBACK MODE"}</b>
         </p>
     </div>
     """, unsafe_allow_html=True)
